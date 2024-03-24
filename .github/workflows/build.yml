@@ -18,11 +18,11 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
       - name: Build
-        run: dotnet build --no-restore
+        run: dotnet build -c Release --no-restore
       # - name: Test
       #   run: dotnet test --no-build --verbosity normal
       - name: Publish
-        run: dotnet publish -c Release -r win-x64 -o ./publish
+        run: dotnet publish -c Release -r win-x64 -o ./publish sensors2metrics.csproj
       - name: Archive
         uses: actions/upload-artifact@v4
         with:
