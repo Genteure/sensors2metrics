@@ -64,6 +64,7 @@ public partial class HardwareVisitor : IVisitor
             (HardwareType.Cpu, SensorType.Power) => this.CreateCpuPowerGauge(sensor),
             (HardwareType.Cpu, SensorType.Clock) => this.CreateCpuClockGauge(sensor),
             (HardwareType.Cpu, SensorType.Voltage) => this.CreateCpuVoltageGauge(sensor),
+            (HardwareType.Cpu, SensorType.Current) => this.CreateCpuCurrentGauge(sensor),
             (HardwareType.Cpu, SensorType.Factor) => this.CreateCpuFactorGauge(sensor),
             (HardwareType.SuperIO, SensorType.Voltage) => this.CreateSuperIOVoltageGauge(sensor),
             (HardwareType.SuperIO, SensorType.Control) => this.CreateSuperIOControlGauge(sensor),
@@ -138,6 +139,12 @@ public partial class HardwareVisitor : IVisitor
     {
         var id = $"{PREFIX}cpu_voltage_volts";
         Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "CPU Voltage").Set(sensor.Value ?? 0);
+        return true;
+    }
+    private bool CreateCpuCurrentGauge(ISensor sensor)
+    {
+        var id = $"{PREFIX}cpu_current_amperes";
+        Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "CPU Current").Set(sensor.Value ?? 0);
         return true;
     }
     private bool CreateCpuFactorGauge(ISensor sensor)
