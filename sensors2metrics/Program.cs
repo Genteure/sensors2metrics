@@ -1,7 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using System.Text.RegularExpressions;
 using LibreHardwareMonitor.Hardware;
 using Prometheus;
+using System.Text.RegularExpressions;
 
 Computer computer = new()
 {
@@ -18,6 +18,10 @@ Metrics.DefaultRegistry.AddBeforeCollectCallback(() =>
     computer.Accept(new HardwareVisitor());
     Console.WriteLine($"[{DateTimeOffset.Now}] Metrics collected.");
 });
+
+Metrics.DefaultFactory
+    .CreateGauge("lhm_system_boot_timestamp_seconds", "System boot timestamp in seconds")
+    .Set((DateTimeOffset.Now - TimeSpan.FromMilliseconds(Environment.TickCount64)).ToUnixTimeSeconds());
 
 computer.Accept(new HardwareVisitor());
 
@@ -48,23 +52,23 @@ public partial class HardwareVisitor : IVisitor
     {
         hardware.Update();
         hardware.Traverse(this);
-        foreach (IHardware subHardware in hardware.SubHardware) subHardware.Accept(this);
+        foreach (var subHardware in hardware.SubHardware) subHardware.Accept(this);
     }
 
     public void VisitSensor(ISensor sensor)
     {
         var handled = (sensor.Hardware.HardwareType, sensor.SensorType) switch
         {
-            (HardwareType.Cpu, SensorType.Temperature) => CreateCpuTempGauge(sensor),
-            (HardwareType.Cpu, SensorType.Load) => CreateCpuLoadGauge(sensor),
-            (HardwareType.Cpu, SensorType.Power) => CreateCpuPowerGauge(sensor),
-            (HardwareType.Cpu, SensorType.Clock) => CreateCpuClockGauge(sensor),
-            (HardwareType.Cpu, SensorType.Voltage) => CreateCpuVoltageGauge(sensor),
-            (HardwareType.Cpu, SensorType.Factor) => CreateCpuFactorGauge(sensor),
-            (HardwareType.SuperIO, SensorType.Voltage) => CreateSuperIOVoltageGauge(sensor),
-            (HardwareType.SuperIO, SensorType.Control) => CreateSuperIOControlGauge(sensor),
-            (HardwareType.SuperIO, SensorType.Temperature) => CreateSuperIOTemperatureGauge(sensor),
-            (HardwareType.SuperIO, SensorType.Fan) => CreateSuperIOFanGauge(sensor),
+            (HardwareType.Cpu, SensorType.Temperature) => this.CreateCpuTempGauge(sensor),
+            (HardwareType.Cpu, SensorType.Load) => this.CreateCpuLoadGauge(sensor),
+            (HardwareType.Cpu, SensorType.Power) => this.CreateCpuPowerGauge(sensor),
+            (HardwareType.Cpu, SensorType.Clock) => this.CreateCpuClockGauge(sensor),
+            (HardwareType.Cpu, SensorType.Voltage) => this.CreateCpuVoltageGauge(sensor),
+            (HardwareType.Cpu, SensorType.Factor) => this.CreateCpuFactorGauge(sensor),
+            (HardwareType.SuperIO, SensorType.Voltage) => this.CreateSuperIOVoltageGauge(sensor),
+            (HardwareType.SuperIO, SensorType.Control) => this.CreateSuperIOControlGauge(sensor),
+            (HardwareType.SuperIO, SensorType.Temperature) => this.CreateSuperIOTemperatureGauge(sensor),
+            (HardwareType.SuperIO, SensorType.Fan) => this.CreateSuperIOFanGauge(sensor),
             _ => false
         };
 
