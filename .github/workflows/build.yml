@@ -23,8 +23,15 @@ jobs:
       #   run: dotnet test --no-build --verbosity normal
       - name: Publish
         run: dotnet publish -c Release -r win-x64 -o ./publish sensors2metrics.csproj
-      - name: Archive
+      - name: Publish Self-Contained
+        run: dotnet publish -c Release -r win-x64 --self-contained -o ./publish-sc sensors2metrics.csproj
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: sensors2metrics
           path: ./publish
+      - name: Upload Artifact Self-Contained
+        uses: actions/upload-artifact@v4
+        with:
+          name: sensors2metrics-self-contained
+          path: ./publish-sc
