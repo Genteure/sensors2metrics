@@ -1,0 +1,3 @@
+[submodule "lhm"]
+	path = lhm
+	url = https://github.com/shugen002/LibreHardwareMonitor.git
