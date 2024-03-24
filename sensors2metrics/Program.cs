@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+// See https://aka.ms/new-console-template for more information
 using LibreHardwareMonitor.Hardware;
 using Prometheus;
 using System.Text.RegularExpressions;
@@ -109,6 +109,10 @@ public partial class HardwareVisitor : IVisitor
 
     private bool CreateCpuTempGauge(ISensor sensor)
     {
+        // 忽略英特尔的 Distance to TjMax
+        if (sensor.Name.Contains("Distance to TjMax"))
+            return true;
+
         var id = $"{PREFIX}cpu_temp_celsius";
         Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "CPU Temperature").Set(sensor.Value ?? 0);
         return true;
