@@ -114,8 +114,9 @@ public partial class HardwareVisitor : IVisitor
 
     private bool CreateSuperIOControlGauge(ISensor sensor)
     {
+        // 风扇转速控制百分比，转换为 0-1
         var id = $"{PREFIX}superio_control";
-        Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "SuperIO Control").Set(sensor.Value ?? 0);
+        Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "SuperIO Control").Set((sensor.Value ?? 0) / 100d);
         return true;
     }
 
@@ -141,7 +142,7 @@ public partial class HardwareVisitor : IVisitor
     {
         var id = $"{PREFIX}cpu_load_ratio";
         // 从 0-100 转换为 0-1
-        Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "CPU Load").Set((sensor.Value ?? 0) / 100);
+        Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "CPU Load").Set((sensor.Value ?? 0) / 100d);
         return true;
     }
 
