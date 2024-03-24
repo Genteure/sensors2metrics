@@ -14,7 +14,7 @@ computer.Open();
 Metrics.SuppressDefaultMetrics();
 Metrics.DefaultRegistry.AddBeforeCollectCallback(() =>
 {
-    Console.WriteLine("Collecting metrics...");
+    Console.WriteLine($"[{DateTimeOffset.Now}] Collecting metrics...");
     computer.Accept(new HardwareVisitor());
 });
 
