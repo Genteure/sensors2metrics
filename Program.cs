@@ -3,19 +3,13 @@ using System.Text.RegularExpressions;
 using LibreHardwareMonitor.Hardware;
 using Prometheus;
 
-Computer computer = new Computer
+Computer computer = new()
 {
     IsCpuEnabled = true,
-    IsGpuEnabled = true,
-    IsMemoryEnabled = true,
     IsMotherboardEnabled = true,
-    IsControllerEnabled = true,
-    // IsNetworkEnabled = false,
-    // IsStorageEnabled = true
 };
 
 computer.Open();
-
 
 Metrics.SuppressDefaultMetrics();
 Metrics.DefaultRegistry.AddBeforeCollectCallback(() =>
@@ -58,43 +52,6 @@ public partial class HardwareVisitor : IVisitor
 
     public void VisitSensor(ISensor sensor)
     {
-        // var id = $"lhm_{sensor.Hardware.HardwareType.ToString().ToLower()}_{sensor.Identifier.ToString().Replace('/', '_').TrimStart('_')}";
-        var id = "lhm_" + sensor.Identifier.ToString().Replace('/', '_').Replace("-", null).TrimStart('_');
-        // Console.WriteLine($"{sensor.Name} ({sensor.SensorType}): {sensor.Value ?? 0}");
-        // Metrics.DefaultFactory.CreateGauge(id, $"{sensor.Hardware.HardwareType}: {sensor.Name} ({sensor.SensorType})").Set(sensor.Value ?? 0);
-
-        switch (sensor.Hardware.HardwareType)
-        {
-            case HardwareType.Motherboard:
-                break;
-            case HardwareType.SuperIO:
-                break;
-            case HardwareType.Cpu:
-                break;
-            case HardwareType.Memory:
-                break;
-            case HardwareType.GpuNvidia:
-                break;
-            case HardwareType.GpuAmd:
-                break;
-            case HardwareType.GpuIntel:
-                break;
-            case HardwareType.Storage:
-                break;
-            case HardwareType.Network:
-                break;
-            case HardwareType.Cooler:
-                break;
-            case HardwareType.EmbeddedController:
-                break;
-            case HardwareType.Psu:
-                break;
-            case HardwareType.Battery:
-                break;
-            default:
-                break;
-        }
-
         var handled = (sensor.Hardware.HardwareType, sensor.SensorType) switch
         {
             (HardwareType.Cpu, SensorType.Temperature) => CreateCpuTempGauge(sensor),
@@ -103,6 +60,10 @@ public partial class HardwareVisitor : IVisitor
             (HardwareType.Cpu, SensorType.Clock) => CreateCpuClockGauge(sensor),
             (HardwareType.Cpu, SensorType.Voltage) => CreateCpuVoltageGauge(sensor),
             (HardwareType.Cpu, SensorType.Factor) => CreateCpuFactorGauge(sensor),
+            (HardwareType.SuperIO, SensorType.Voltage) => CreateSuperIOVoltageGauge(sensor),
+            (HardwareType.SuperIO, SensorType.Control) => CreateSuperIOControlGauge(sensor),
+            (HardwareType.SuperIO, SensorType.Temperature) => CreateSuperIOTemperatureGauge(sensor),
+            (HardwareType.SuperIO, SensorType.Fan) => CreateSuperIOFanGauge(sensor),
             _ => false
         };
 
@@ -110,6 +71,34 @@ public partial class HardwareVisitor : IVisitor
         {
             Console.WriteLine($"[SKIPPED SENSOR] {sensor.Hardware.HardwareType}: {sensor.Name} ({sensor.SensorType}): {sensor.Value ?? 0}");
         }
+    }
+
+    private bool CreateSuperIOFanGauge(ISensor sensor)
+    {
+        var id = $"{PREFIX}superio_fan_rpm";
+        Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "SuperIO Fan").Set(sensor.Value ?? 0);
+        return true;
+    }
+
+    private bool CreateSuperIOTemperatureGauge(ISensor sensor)
+    {
+        var id = $"{PREFIX}superio_temp_celsius";
+        Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "SuperIO Temperature").Set(sensor.Value ?? 0);
+        return true;
+    }
+
+    private bool CreateSuperIOControlGauge(ISensor sensor)
+    {
+        var id = $"{PREFIX}superio_control";
+        Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "SuperIO Control").Set(sensor.Value ?? 0);
+        return true;
+    }
+
+    private bool CreateSuperIOVoltageGauge(ISensor sensor)
+    {
+        var id = $"{PREFIX}superio_voltage_volts";
+        Metrics.DefaultFactory.WithSensorTypeLabels(sensor).CreateGauge(id, "SuperIO Voltage").Set(sensor.Value ?? 0);
+        return true;
     }
 
     private bool CreateCpuTempGauge(ISensor sensor)
@@ -167,14 +156,29 @@ public static partial class MetricFactoryExtensions
         {
             { "sensor_type",sensor.SensorType.ToString() },
             { "hardware_type", sensor.Hardware.HardwareType.ToString() },
-            { "hardware_name", sensor.Hardware.Name },
         };
+
+        {
+            var hwname = sensor.Hardware.Name;
+            var parent = sensor.Hardware.Parent;
+
+            while (parent != null)
+            {
+                hwname = $"{parent.Name} › {hwname}";
+                parent = parent.Parent;
+            }
+
+            labels.Add("hardware_name", hwname);
+        }
+
+        labels.Add("sensor_name", sensor.Name);
 
         switch (sensor.Hardware.HardwareType)
         {
             case HardwareType.Motherboard:
                 break;
             case HardwareType.SuperIO:
+                // labels.Add("sensor_name", sensor.Name);
                 break;
             case HardwareType.Cpu:
                 var match = GetCpuCoreRegex().Match(sensor.Name);
@@ -186,17 +190,12 @@ public static partial class MetricFactoryExtensions
                 else
                 {
                     labels.Add("cpu", "package");
-                    labels.Add("sensor_name", sensor.Name);
                 }
                 break;
             case HardwareType.Memory:
-                break;
             case HardwareType.GpuNvidia:
-                break;
             case HardwareType.GpuAmd:
-                break;
             case HardwareType.GpuIntel:
-                break;
             case HardwareType.Storage:
             case HardwareType.Network:
             case HardwareType.Cooler:
