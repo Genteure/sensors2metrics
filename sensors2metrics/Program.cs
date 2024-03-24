@@ -1,6 +1,8 @@
 // See https://aka.ms/new-console-template for more information
 using LibreHardwareMonitor.Hardware;
 using Prometheus;
+using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 Computer computer = new()
@@ -8,8 +10,6 @@ Computer computer = new()
     IsCpuEnabled = true,
     IsMotherboardEnabled = true,
 };
-
-computer.Open();
 
 Metrics.SuppressDefaultMetrics();
 Metrics.DefaultRegistry.AddBeforeCollectCallback(() =>
@@ -19,10 +19,29 @@ Metrics.DefaultRegistry.AddBeforeCollectCallback(() =>
     Console.WriteLine($"[{DateTimeOffset.Now}] Metrics collected.");
 });
 
+try
+{
+    var staticLabels = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText("labels.json", Encoding.UTF8));
+    if (staticLabels is not null)
+    {
+        Metrics.DefaultRegistry.SetStaticLabels(staticLabels);
+        Console.WriteLine($"Static labels loaded: {string.Join(", ", staticLabels.Select(kv => $"{kv.Key}={kv.Value}"))}");
+    }
+    else
+    {
+        Console.WriteLine("Null static labels, skipping static labels.");
+    }
+}
+catch (FileNotFoundException)
+{
+    Console.WriteLine("Did not find labels.json, skipping static labels.");
+}
+
 Metrics.DefaultFactory
     .CreateGauge("lhm_system_boot_timestamp_seconds", "System boot timestamp in seconds")
     .Set((DateTimeOffset.Now - TimeSpan.FromMilliseconds(Environment.TickCount64)).ToUnixTimeSeconds());
 
+computer.Open();
 computer.Accept(new HardwareVisitor());
 
 var metricServer = new KestrelMetricServer(hostname: "127.0.0.1", port: 6272);
