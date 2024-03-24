@@ -25,7 +25,7 @@ Metrics.DefaultFactory
 
 computer.Accept(new HardwareVisitor());
 
-var metricServer = new KestrelMetricServer(port: 6272);
+var metricServer = new KestrelMetricServer(hostname: "127.0.0.1", port: 6272);
 metricServer.Start();
 
 Console.WriteLine("Press Ctrl+C to exit.");
