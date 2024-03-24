@@ -17,3 +17,8 @@ trim_trailing_whitespace = false
 [*.{yaml,yml}]
 indent_size = 2
 
+[*.csproj]
+indent_size = 2
+
+[app.manifest]
+indent_size = 2
