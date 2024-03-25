@@ -186,6 +186,9 @@ public static partial class MetricFactoryExtensions
     [GeneratedRegex(@"Core #(\d+)", RegexOptions.Compiled)]
     private static partial Regex GetCpuCoreRegex();
 
+    [GeneratedRegex(@"Thread #(\d+)", RegexOptions.Compiled)]
+    private static partial Regex GetCpuThreadRegex();
+
     public static IMetricFactory WithSensorTypeLabels(this IMetricFactory factory, ISensor sensor)
     {
         Dictionary<string, string> labels = new()
@@ -222,6 +225,12 @@ public static partial class MetricFactoryExtensions
                 {
                     labels.Add("cpu", "core");
                     labels.Add("cpu_core", match.Groups[1].Value);
+
+                    var threadMatch = GetCpuThreadRegex().Match(sensor.Name);
+                    if (threadMatch.Success)
+                    {
+                        labels.Add("cpu_thread", threadMatch.Groups[1].Value);
+                    }
                 }
                 else
                 {
