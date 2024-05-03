@@ -1,6 +1,7 @@
 // See https://aka.ms/new-console-template for more information
 using LibreHardwareMonitor.Hardware;
 using Prometheus;
+using System.Management;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -235,6 +236,20 @@ public static partial class MetricFactoryExtensions
                 else
                 {
                     labels.Add("cpu", "package");
+                }
+                if (OperatingSystem.IsWindows()) {
+                    ManagementObjectSearcher win32Proc = new("select manufacturer from Win32_Processor");
+                    foreach (ManagementObject obj in win32Proc.Get())
+                    {
+                        var manufacturer = obj["Manufacturer"].ToString() switch
+                        {
+                            "GenuineIntel" => "Intel",
+                            "AuthenticAMD" => "AMD",
+                            _ => obj["Manufacturer"].ToString() ?? "Unknown"
+                        };
+                        labels.Add("manufacturer", manufacturer);
+                        break;
+                    }
                 }
                 break;
             case HardwareType.Memory:
