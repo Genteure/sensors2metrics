@@ -1,6 +1,7 @@
 // See https://aka.ms/new-console-template for more information
 using LibreHardwareMonitor.Hardware;
 using Prometheus;
+using System.Management;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -189,6 +190,24 @@ public static partial class MetricFactoryExtensions
     [GeneratedRegex(@"Thread #(\d+)", RegexOptions.Compiled)]
     private static partial Regex GetCpuThreadRegex();
 
+    private static readonly string manufacturer = ((Func<string>)(() =>
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            ManagementObjectSearcher win32Proc = new("select manufacturer from Win32_Processor");
+            foreach (ManagementObject obj in win32Proc.Get())
+            {
+                return obj["Manufacturer"].ToString() switch
+                {
+                    "GenuineIntel" => "Intel",
+                    "AuthenticAMD" => "AMD",
+                    _ => obj["Manufacturer"].ToString() ?? "Unknown"
+                };
+            }
+        }
+        return "";
+    }))();
+
     public static IMetricFactory WithSensorTypeLabels(this IMetricFactory factory, ISensor sensor)
     {
         Dictionary<string, string> labels = new()
@@ -235,6 +254,10 @@ public static partial class MetricFactoryExtensions
                 else
                 {
                     labels.Add("cpu", "package");
+                }
+                if (OperatingSystem.IsWindows())
+                {
+                    labels.Add("manufacturer", manufacturer);
                 }
                 break;
             case HardwareType.Memory:
